@@ -1,0 +1,40 @@
+# Node modules
+node_modules/
+.npm/
+
+# Next.js
+.next/
+out/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+.env/
+bin/
+lib/
+include/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+desktop.ini
+thumbs.db
+.DS_Store
+
+# Misc
+*.log
