@@ -10,9 +10,9 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
-app.use("/api/auth", require("./routes/auth"));
-app.use("/api/movies", require("./routes/movies"));
-app.use("/api/user", require("./routes/user"));
+app.use("/api/auth", require("../routes/auth"));
+app.use("/api/movies", require("../routes/movies"));
+app.use("/api/user", require("../routes/user"));
 
 app.get("/", (req, res) => {
     res.send("CineScope API is running");
