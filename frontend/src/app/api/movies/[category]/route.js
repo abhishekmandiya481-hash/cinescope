@@ -42,15 +42,47 @@ async function getImdbPoster(title) {
 
 async function getYoutubeTrailer(title) {
     try {
+        // Search for title + official trailer
         const res = await ytSearch.GetListByKeyword(`${title} official trailer`, false, 1, [{type: 'video'}]);
-        return res.items?.[0]?.id || 'dQw4w9WgXcQ';
-    } catch (e) { return 'dQw4w9WgXcQ'; }
+        // youtube-search-api returns items[0].id for video ID
+        const videoId = res.items?.[0]?.id || res.items?.[0]?.videoId;
+        return videoId || 'dQw4w9WgXcQ'; // Fallback to a valid trailer id (Never Gonna Give You Up as a last resort)
+    } catch (e) { 
+        console.error("Youtube Search Error:", e.message);
+        return 'dQw4w9WgXcQ'; 
+    }
 }
 
 export async function GET(request, { params }) {
     const category = params.category;
     
-    // Simple logic for categories
+    // 1. Handle Individual Movie Lookup (if category is a numeric ID)
+    const movieId = parseInt(category);
+    if (!isNaN(movieId)) {
+        const found = mockMoviesDB.find(m => m.id === movieId);
+        if (found) {
+            const videoId = await getYoutubeTrailer(found.title);
+            let poster = found.custom_poster_url;
+            
+            if (poster && (poster.includes('images-na.ssl-images-amazon.com') || poster.includes('ia.media-imdb.com'))) {
+                const freshPoster = await getImdbPoster(found.title);
+                if (freshPoster) poster = freshPoster;
+            }
+
+            if (!poster) poster = "https://via.placeholder.com/300x450?text=No+Poster+Found";
+
+            const movieDetail = {
+                ...found,
+                custom_poster_url: poster,
+                credits: { cast: found._originalCast || [] },
+                videos: { results: [{ type: 'Trailer', key: videoId, site: 'YouTube' }] }
+            };
+            return NextResponse.json(movieDetail);
+        }
+        return NextResponse.json({ message: "Movie not found" }, { status: 404 });
+    }
+
+    // 2. Handle Category Lists
     let results = [];
     if (category === 'trending' || category === 'popular') {
         results = mockMoviesDB.slice(0, 10);
@@ -64,13 +96,11 @@ export async function GET(request, { params }) {
         const videoId = await getYoutubeTrailer(m.title);
         let poster = m.custom_poster_url;
         
-        // If image is from amazon/imdb s3 (likely broken), try to scrape a fresh one
         if (poster && (poster.includes('images-na.ssl-images-amazon.com') || poster.includes('ia.media-imdb.com'))) {
             const freshPoster = await getImdbPoster(m.title);
             if (freshPoster) poster = freshPoster;
         }
 
-        // Final fallback if still empty or failed
         if (!poster) poster = "https://via.placeholder.com/300x450?text=No+Poster+Found";
 
         return {
