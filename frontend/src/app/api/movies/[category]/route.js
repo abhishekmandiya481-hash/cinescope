@@ -55,15 +55,25 @@ const tollywoodMovies = [
 mockMoviesDB.push(...tollywoodMovies);
 
 // Helpers (Simplified for migration)
-async function getImdbCast(title) {
+async function getImdbCast(title, year) {
     if (globalCache.casts[title]) return globalCache.casts[title];
     try {
-        const { data } = await axios.get(`https://m.imdb.com/find/?q=${encodeURIComponent(title)}&s=tt`, { timeout: 3000 });
+        const query = year ? `${title} ${year}` : title;
+        const { data } = await axios.get(`https://m.imdb.com/find/?q=${encodeURIComponent(query)}&s=tt`, { 
+            timeout: 5000,
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36' }
+        });
         const $ = cheerio.load(data);
-        const moviePath = $('.ipc-metadata-list-summary-item__t').first().attr('href');
+        // Robust link finding: first link that looks like a title
+        let moviePath = $('.ipc-metadata-list-summary-item__t').first().attr('href') || 
+                        $('a[href*="/title/tt"]').first().attr('href');
+        
         if (!moviePath) return [];
 
-        const moviePage = await axios.get(`https://m.imdb.com${moviePath}`, { timeout: 3000 });
+        const moviePage = await axios.get(`https://m.imdb.com${moviePath}`, { 
+            timeout: 5000,
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36' }
+        });
         const $$ = cheerio.load(moviePage.data);
         const cast = [];
         $$('[data-testid="title-cast-item"]').each((i, el) => {
@@ -85,12 +95,19 @@ async function getImdbCast(title) {
     } catch (e) { return []; }
 }
 
-async function getImdbPoster(title) {
+async function getImdbPoster(title, year) {
     if (globalCache.posters[title]) return globalCache.posters[title];
     try {
-        const { data } = await axios.get(`https://m.imdb.com/find/?q=${encodeURIComponent(title)}&s=tt`, { timeout: 2000 });
+        const query = year ? `${title} ${year}` : title;
+        const { data } = await axios.get(`https://m.imdb.com/find/?q=${encodeURIComponent(query)}&s=tt`, { 
+            timeout: 5000,
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36' }
+        });
         const $ = cheerio.load(data);
-        const img = $('.ipc-image').first().attr('src');
+        // Try multiple selectors for the poster
+        const img = $('.ipc-image').first().attr('src') || 
+                    $('.ipc-metadata-list-summary-item__image img').first().attr('src');
+        
         const url = img ? img.replace(/_V1_.*\.jpg$/, '_V1_.jpg') : null;
         if (url) globalCache.posters[title] = url;
         return url;
@@ -139,7 +156,7 @@ export async function GET(request, { params }) {
             const isInsecure = poster && poster.startsWith('http://');
 
             if (isPlaceholder || isLegacy || isInsecure) {
-                const freshPoster = await getImdbPoster(found.title);
+                const freshPoster = await getImdbPoster(found.title, found.year);
                 if (freshPoster) {
                     poster = freshPoster;
                 } else if (isLegacy || isInsecure) {
@@ -154,7 +171,7 @@ export async function GET(request, { params }) {
             let cast = found._originalCast || [];
             // If cast is missing or generic (e.g., only "Lead"), try to scrape fresh data
             if (cast.length === 0 || cast.every(c => c.character === "Lead")) {
-                const freshCast = await getImdbCast(found.title);
+                const freshCast = await getImdbCast(found.title, found.year);
                 if (freshCast && freshCast.length > 0) cast = freshCast;
             }
 
@@ -197,7 +214,7 @@ export async function GET(request, { params }) {
         const isInsecure = poster && poster.startsWith('http://');
 
         if (isPlaceholder || isLegacy || isInsecure) {
-            const freshPoster = await getImdbPoster(m.title);
+            const freshPoster = await getImdbPoster(m.title, m.year);
             if (freshPoster) {
                 poster = freshPoster;
             } else if (isLegacy || isInsecure) {
