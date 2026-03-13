@@ -68,19 +68,16 @@ export default function Carousel({ title, movies }) {
           overflowX: 'auto',
           gap: '0.8rem',
           padding: '0.5rem var(--container-padding) 1.5rem var(--container-padding)',
-          scrollBehavior: 'smooth',
-          scrollSnapType: 'x mandatory'
+          scrollBehavior: 'smooth'
         }}
-        className="hide-scrollbar"
+        className="hide-scrollbar snap-x"
       >
         {movies.map(movie => (
           <div key={movie.id} style={{ 
             flex: '0 0 auto', 
             width: 'clamp(140px, 40vw, 210px)',
-            transition: 'transform 0.3s',
-            scrollSnapAlign: 'start',
-            scrollSnapStop: 'always'
-          }} className="movie-card-wrapper">
+            transition: 'transform 0.3s'
+          }} className="movie-card-wrapper snap-start">
             <MovieCard movie={movie} />
           </div>
         ))}

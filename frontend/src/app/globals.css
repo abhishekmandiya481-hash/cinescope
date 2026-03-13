@@ -37,6 +37,7 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  -webkit-tap-highlight-color: transparent; /* Remove mobile tap highlight */
 }
 
 /* Utility classes */
@@ -46,6 +47,13 @@
 .hide-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+.snap-x {
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+.snap-start {
+  scroll-snap-align: start;
 }
 
 body {
@@ -84,13 +92,24 @@ a {
 .hero-gradient {
   background: linear-gradient(
     180deg,
-    rgba(15, 16, 20, 0.4) 0%,
-    rgba(15, 16, 20, 0.8) 70%,
+    rgba(15, 16, 20, 0.2) 0%,
+    rgba(15, 16, 20, 0.7) 50%,
     rgba(15, 16, 20, 1) 100%
   );
   position: absolute;
   inset: 0;
   z-index: 1;
+}
+
+@media (max-width: 768px) {
+  .hero-gradient {
+    background: linear-gradient(
+      180deg,
+      rgba(15, 16, 20, 0) 0%,
+      rgba(15, 16, 20, 0.8) 60%,
+      rgba(15, 16, 20, 1) 100%
+    );
+  }
 }
 
 .glass-card {

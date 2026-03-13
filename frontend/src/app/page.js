@@ -113,20 +113,20 @@ export default function Home() {
           </div>
 
           <h1 style={{ 
-            fontSize: 'clamp(2.5rem, 10vw, 5.5rem)', 
+            fontSize: 'clamp(2rem, 10vw, 5.5rem)', 
             fontWeight: '800', 
-            lineHeight: '0.9',
-            marginBottom: '1.5rem',
+            lineHeight: '1',
+            marginBottom: '1rem',
             background: 'linear-gradient(to bottom, #fff, #ccc)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
-            letterSpacing: '-2px'
+            letterSpacing: '-1px'
           }}>
             {heroMovie ? heroMovie.title : 'CineScope'}
           </h1>
 
           <h2 style={{
-            fontSize: 'clamp(1.2rem, 3vw, 2rem)',
+            fontSize: 'clamp(1rem, 3vw, 2rem)',
             fontWeight: '500',
             color: 'var(--text-main)',
             marginBottom: '1rem',
@@ -135,8 +135,8 @@ export default function Home() {
             Anywhere. Anytime. Infinite Stories.
           </h2>
 
-          <p style={{ 
-            fontSize: 'clamp(0.9rem, 1.5vw, 1.1rem)', 
+          <p className="desktop-only" style={{ 
+            fontSize: '1.1rem', 
             color: 'var(--text-muted)', 
             marginBottom: '3rem', 
             lineHeight: '1.6',
@@ -145,44 +145,61 @@ export default function Home() {
             {heroMovie ? heroMovie.overview : 'Discover the latest blockbusters and exclusive originals. Experience cinema redefined.'}
           </p>
           
-          <div style={{ display: 'flex', gap: '1rem', marginTop: '2.5rem' }}>
+          <div className="hero-buttons" style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
             <button 
               onClick={() => setTrailerOpen(true)}
               style={{ 
-                padding: '0.8rem 2rem', 
+                flex: 1,
+                padding: '0.8rem 1.5rem', 
                 background: 'white', 
                 color: 'black', 
                 border: 'none', 
                 borderRadius: '4px', 
                 fontWeight: 'bold', 
-                fontSize: '1.1rem', 
+                fontSize: '1rem', 
                 display: 'flex', 
                 alignItems: 'center', 
-                gap: '10px',
+                justifyContent: 'center',
+                gap: '8px',
                 cursor: 'pointer'
               }}
             >
-              <span style={{ fontSize: '1.5rem' }}>▶</span> Play
+              <span style={{ fontSize: '1.2rem' }}>▶</span> Play
             </button>
             <button 
               onClick={() => router.push(`/movie/${heroMovie?.id}`)}
               style={{ 
-                padding: '0.8rem 2rem', 
+                flex: 1,
+                padding: '0.8rem 1.5rem', 
                 background: 'rgba(109, 109, 110, 0.7)', 
                 color: 'white', 
                 border: 'none', 
                 borderRadius: '4px', 
                 fontWeight: 'bold', 
-                fontSize: '1.1rem', 
+                fontSize: '1rem', 
                 display: 'flex', 
                 alignItems: 'center', 
-                gap: '10px',
+                justifyContent: 'center',
+                gap: '8px',
                 cursor: 'pointer'
               }}
             >
-              <span style={{ fontSize: '1.5rem' }}>ⓘ</span> More Info
+              <span style={{ fontSize: '1.2rem' }}>ⓘ</span> Details
             </button>
           </div>
+
+          <style jsx>{`
+            @media (max-width: 480px) {
+              .hero-buttons {
+                flex-direction: column !important;
+                width: 100%;
+              }
+              .hero-buttons button {
+                width: 100% !important;
+                padding: 1rem !important;
+              }
+            }
+          `}</style>
 
         </div>
       </div>

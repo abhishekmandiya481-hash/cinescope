@@ -81,8 +81,8 @@ export default function Navbar() {
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-          {/* Workable Search Bar on Right */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          {/* Workable Search Bar on Right - Desktop Only */}
           <div className="desktop-only">
             <SearchBar compact={true} />
           </div>
