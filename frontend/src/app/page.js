@@ -62,7 +62,7 @@ export default function Home() {
       {/* Hero Section */}
       <div style={{
         position: 'relative',
-        minHeight: '85vh',
+        minHeight: 'clamp(60vh, 85vh, 85vh)',
         width: '100%',
         backgroundImage: heroMovie 
           ? `linear-gradient(to bottom, rgba(15,16,20,0.2) 0%, rgba(15,16,20,1) 100%), url(${heroMovie.backdrop_path ? `https://image.tmdb.org/t/p/original${heroMovie.backdrop_path}` : heroMovie.custom_backdrop_url})`
@@ -76,6 +76,18 @@ export default function Home() {
         padding: '0 var(--container-padding)',
         overflow: 'hidden'
       }}>
+        {/* LCP Optimization: Preload the hero image if it's a custom URL */}
+        {heroMovie?.custom_backdrop_url && (
+            <div style={{ display: 'none' }}>
+                <Image 
+                    src={heroMovie.custom_backdrop_url} 
+                    alt="LCP Preload" 
+                    width={1} 
+                    height={1} 
+                    priority 
+                />
+            </div>
+        )}
         {/* Decorative Overlay */}
         <div className="hero-gradient" style={{ pointerEvents: 'none' }}></div>
 

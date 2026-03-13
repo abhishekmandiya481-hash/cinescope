@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function MovieCard({ movie }) {
   const posterUrl = movie.poster_path 
@@ -7,11 +8,9 @@ export default function MovieCard({ movie }) {
     : movie.custom_poster_url || null;
 
   const handleImgError = async (e) => {
-    // Prevent infinite loop
     e.target.onerror = null;
     const title = encodeURIComponent(movie.title || 'Movie');
     const year = movie.year || (movie.release_date ? movie.release_date.split('-')[0] : '');
-    // Try OMDB poster
     try {
       const res = await fetch(`https://www.omdbapi.com/?t=${title}&y=${year}&apikey=trilogy`);
       const data = await res.json();
@@ -20,7 +19,6 @@ export default function MovieCard({ movie }) {
         return;
       }
     } catch (_) {}
-    // Final fallback: styled placeholder
     e.target.src = `https://placehold.co/500x750/1a1a2e/e2b616?text=${title}`;
   };
 
@@ -38,17 +36,27 @@ export default function MovieCard({ movie }) {
       }}
       className="movie-card"
       >
-        <img 
-          src={posterUrl || `https://placehold.co/500x750/1a1a2e/e2b616?text=${encodeURIComponent(movie.title)}`}
-          alt={movie.title} 
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          onError={handleImgError}
-        />
+        <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+            <Image 
+              src={posterUrl || `https://placehold.co/500x750/1a1a2e/e2b616?text=${encodeURIComponent(movie.title)}`}
+              alt={movie.title} 
+              fill
+              sizes="(max-width: 480px) 150px, (max-width: 768px) 200px, 210px"
+              style={{ objectFit: 'cover' }}
+              onLoadingComplete={(img) => {
+                if (img.naturalWidth === 0) handleImgError({ target: img });
+              }}
+              onError={(e) => handleImgError({ target: e.target })}
+              unoptimized={posterUrl && posterUrl.includes('placeholder')}
+            />
+        </div>
+        
         <div style={{
           position: 'absolute',
           bottom: 0,
           left: 0,
           right: 0,
+          zIndex: 2,
           background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.8) 40%, transparent 100%)',
           padding: '2.5rem 1rem 1.2rem',
           display: 'flex',

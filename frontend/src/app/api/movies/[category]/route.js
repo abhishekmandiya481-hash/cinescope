@@ -259,7 +259,10 @@ export async function GET(request, { params }) {
                 credits: { cast },
                 videos: { results: [{ type: 'Trailer', key: videoId, site: 'YouTube' }] }
             };
-            return NextResponse.json(movieDetail);
+            
+            const response = NextResponse.json(movieDetail);
+            response.headers.set('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=59');
+            return response;
         }
         return NextResponse.json({ message: "Movie not found" }, { status: 404 });
     }
@@ -300,13 +303,16 @@ export async function GET(request, { params }) {
         if (poster && poster.startsWith('http://')) poster = poster.replace('http://', 'https://');
         if (!poster) poster = placeholder;
 
+        const { _originalCast, ...safeData } = m;
         return {
-            ...m,
+            ...safeData,
             custom_poster_url: poster,
             custom_backdrop_url: poster,
             videos: { results: [{ type: 'Trailer', site: 'YouTube', key: videoId }] }
         };
     }));
 
-    return NextResponse.json({ results: enhancedResults });
+    const response = NextResponse.json({ results: enhancedResults });
+    response.headers.set('Cache-Control', 'public, s-maxage=1800, stale-while-revalidate=59');
+    return response;
 }
