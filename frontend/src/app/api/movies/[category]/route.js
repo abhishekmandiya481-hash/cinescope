@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import axios from 'axios';
-import ytSearch from 'youtube-search-api';
 import * as cheerio from 'cheerio';
 import imdbData from '../../../../../data/imdb_movies.json';
 
@@ -79,8 +78,16 @@ async function getYoutubeTrailer(title) {
     const queries = [`${title} official trailer`, `${title} movie trailer`];
     for (const query of queries) {
         try {
-            const res = await ytSearch.GetListByKeyword(query, false, 1, [{type: 'video'}]);
-            const videoId = res.items?.[0]?.id || res.items?.[0]?.videoId;
+            // Internal scraper: fetch YouTube search results page
+            const { data } = await axios.get(`https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`, {
+                timeout: 5000,
+                headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36' }
+            });
+            
+            // Look for videoId in the page source via regex (most reliable for YouTube's dynamic content)
+            const match = data.match(/"videoId":"([^"]+)"/);
+            const videoId = match ? match[1] : null;
+
             if (videoId) {
                 globalCache.trailers[title] = videoId;
                 return videoId;

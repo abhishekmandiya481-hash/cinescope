@@ -1,3 +1,4 @@
+import { NextResponse } from 'next/server';
 import imdbData from '../../../../../data/imdb_movies.json';
 
 export async function GET(request) {
