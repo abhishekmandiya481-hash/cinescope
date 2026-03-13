@@ -31,6 +31,41 @@ try {
 }
 
 // Helpers (Simplified for migration)
+async function getImdbCast(title) {
+    try {
+        // We search on mobile IMDB for better parsing
+        const { data } = await axios.get(`https://m.imdb.com/find/?q=${encodeURIComponent(title)}&s=tt`, { timeout: 4000 });
+        const $ = cheerio.load(data);
+        
+        // Find the first movie title link to get its page
+        const moviePath = $('.ipc-metadata-list-summary-item__t').first().attr('href');
+        if (!moviePath) return [];
+
+        const moviePage = await axios.get(`https://m.imdb.com${moviePath}`, { timeout: 4000 });
+        const $$ = cheerio.load(moviePage.data);
+        
+        const cast = [];
+        $$('[data-testid="title-cast-item"]').each((i, el) => {
+            if (i >= 10) return; // Limit to top 10
+            const name = $$(el).find('[data-testid="title-cast-item__actor"]').text().trim();
+            const character = $$(el).find('[data-testid="cast-item-characters-link"]').text().trim();
+            const profileImg = $$(el).find('img').attr('src');
+            if (name) {
+                cast.push({
+                    id: `scraped-${i}`,
+                    name,
+                    character: character || "Cast",
+                    profile_url: profileImg ? profileImg.replace(/_V1_.*\.jpg$/, '_V1_.jpg') : null
+                });
+            }
+        });
+        return cast;
+    } catch (e) { 
+        console.error("Cast Scraping Error:", e.message);
+        return []; 
+    }
+}
+
 async function getImdbPoster(title) {
     try {
         const { data } = await axios.get(`https://m.imdb.com/find/?q=${encodeURIComponent(title)}&s=tt`, { timeout: 3000 });
@@ -41,16 +76,17 @@ async function getImdbPoster(title) {
 }
 
 async function getYoutubeTrailer(title) {
-    try {
-        // Search for title + official trailer
-        const res = await ytSearch.GetListByKeyword(`${title} official trailer`, false, 1, [{type: 'video'}]);
-        // youtube-search-api returns items[0].id for video ID
-        const videoId = res.items?.[0]?.id || res.items?.[0]?.videoId;
-        return videoId || 'dQw4w9WgXcQ'; // Fallback to a valid trailer id (Never Gonna Give You Up as a last resort)
-    } catch (e) { 
-        console.error("Youtube Search Error:", e.message);
-        return 'dQw4w9WgXcQ'; 
+    const queries = [`${title} official trailer`, `${title} trailer`];
+    for (const query of queries) {
+        try {
+            const res = await ytSearch.GetListByKeyword(query, false, 1, [{type: 'video'}]);
+            const videoId = res.items?.[0]?.id || res.items?.[0]?.videoId;
+            if (videoId) return videoId;
+        } catch (e) { 
+            console.error(`Youtube Search Error for "${query}":`, e.message);
+        }
     }
+    return 'dQw4w9WgXcQ'; // Ultimate fallback
 }
 
 export async function GET(request, { params }) {
@@ -78,10 +114,23 @@ export async function GET(request, { params }) {
             if (poster && poster.startsWith('http://')) poster = poster.replace('http://', 'https://');
             if (!poster) poster = placeholder;
 
+            let cast = found._originalCast || [];
+            // If cast is missing or generic (e.g., only "Lead"), try to scrape fresh data
+            if (cast.length === 0 || cast.every(c => c.character === "Lead")) {
+                const freshCast = await getImdbCast(found.title);
+                if (freshCast && freshCast.length > 0) cast = freshCast;
+            }
+
+            // Standardize profile images
+            cast = cast.map(actor => ({
+                ...actor,
+                custom_profile_url: actor.profile_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(actor.name)}&size=300&background=random`
+            }));
+
             const movieDetail = {
                 ...found,
                 custom_poster_url: poster,
-                credits: { cast: found._originalCast || [] },
+                credits: { cast },
                 videos: { results: [{ type: 'Trailer', key: videoId, site: 'YouTube' }] }
             };
             return NextResponse.json(movieDetail);
