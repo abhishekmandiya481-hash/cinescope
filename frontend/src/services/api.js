@@ -1,7 +1,4 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 
-                 (typeof window !== 'undefined' && window.location.origin.includes('localhost') 
-                  ? "http://localhost:5000/api" 
-                  : "/api");
+const BASE_URL = "/api";
 
 export const api = {
   get: async (endpoint, token = null) => {
