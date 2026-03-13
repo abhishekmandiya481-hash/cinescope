@@ -2,98 +2,92 @@ import { NextResponse } from 'next/server';
 import axios from 'axios';
 import ytSearch from 'youtube-search-api';
 import * as cheerio from 'cheerio';
-import fs from 'fs';
-import path from 'path';
+import imdbData from '../../../../data/imdb_movies.json';
 
-const TMDB_BASE_URL = "https://api.themoviedb.org/3";
-const TMDB_API_KEY = process.env.TMDB_API_KEY;
+// Global In-Memory Cache (Across requests in same serverless instance)
+const globalCache = {
+    trailers: {}, // title -> youtubeId
+    posters: {},  // title -> posterUrl
+    casts: {}     // title -> castArray
+};
 
-// Mock DB Cache (Global in serverless instance)
-let mockMoviesDB = [];
-try {
-    const filePath = path.join(process.cwd(), 'data/imdb_movies.json');
-    if (fs.existsSync(filePath)) {
-        const rawData = fs.readFileSync(filePath, 'utf-8');
-        mockMoviesDB = JSON.parse(rawData).movies.map((m, i) => {
-            let poster = m.posterUrl;
-            const isLegacy = poster && (poster.includes('images-amazon.com') || poster.includes('imdb.com'));
-            if (isLegacy || !poster) poster = "https://placehold.co/300x450/1a1a2e/e2b616?text=CineScope";
-            if (poster && poster.startsWith('http://')) poster = poster.replace('http://', 'https://');
+// Map & Sanitize the imported data once
+const mockMoviesDB = imdbData.movies.map((m, i) => {
+    let poster = m.posterUrl;
+    const isLegacy = poster && (poster.includes('images-amazon.com') || poster.includes('imdb.com'));
+    if (isLegacy || !poster) poster = "https://placehold.co/300x450/1a1a2e/e2b616?text=CineScope";
+    if (poster && poster.startsWith('http://')) poster = poster.replace('http://', 'https://');
 
-            return {
-                id: m.id || (1000 + i),
-                title: m.title,
-                overview: m.plot || "No plot available.",
-                custom_poster_url: poster,
-                year: m.year,
-                runtime: parseInt(m.runtime) || 120,
-                genres: (m.genres || []).map(g => ({ name: g })),
-                _originalCast: (m.actors || "").split(', ').map((name, idx) => ({ id: idx, name, character: "Lead" })),
-                _director: m.director
-            };
-        });
-    }
-} catch (e) {
-    console.error("Error loading mock data:", e.message);
-}
+    return {
+        id: m.id || (1000 + i),
+        title: m.title,
+        overview: m.plot || "No plot available.",
+        custom_poster_url: poster,
+        year: m.year,
+        runtime: parseInt(m.runtime) || 120,
+        genres: (m.genres || []).map(g => ({ name: g })),
+        _originalCast: (m.actors || "").split(', ').map((name, idx) => ({ id: idx, name, character: "Lead" })),
+        _director: m.director
+    };
+});
 
 // Helpers (Simplified for migration)
 async function getImdbCast(title) {
+    if (globalCache.casts[title]) return globalCache.casts[title];
     try {
-        // We search on mobile IMDB for better parsing
-        const { data } = await axios.get(`https://m.imdb.com/find/?q=${encodeURIComponent(title)}&s=tt`, { timeout: 4000 });
+        const { data } = await axios.get(`https://m.imdb.com/find/?q=${encodeURIComponent(title)}&s=tt`, { timeout: 3000 });
         const $ = cheerio.load(data);
-        
-        // Find the first movie title link to get its page
         const moviePath = $('.ipc-metadata-list-summary-item__t').first().attr('href');
         if (!moviePath) return [];
 
-        const moviePage = await axios.get(`https://m.imdb.com${moviePath}`, { timeout: 4000 });
+        const moviePage = await axios.get(`https://m.imdb.com${moviePath}`, { timeout: 3000 });
         const $$ = cheerio.load(moviePage.data);
-        
         const cast = [];
         $$('[data-testid="title-cast-item"]').each((i, el) => {
-            if (i >= 10) return; // Limit to top 10
+            if (i >= 6) return; // Limit to 6 for speed
             const name = $$(el).find('[data-testid="title-cast-item__actor"]').text().trim();
             const character = $$(el).find('[data-testid="cast-item-characters-link"]').text().trim();
             const profileImg = $$(el).find('img').attr('src');
             if (name) {
                 cast.push({
-                    id: `scraped-${i}`,
+                    id: `s-${i}-${Date.now()}`,
                     name,
                     character: character || "Cast",
                     profile_url: profileImg ? profileImg.replace(/_V1_.*\.jpg$/, '_V1_.jpg') : null
                 });
             }
         });
+        globalCache.casts[title] = cast;
         return cast;
-    } catch (e) { 
-        console.error("Cast Scraping Error:", e.message);
-        return []; 
-    }
+    } catch (e) { return []; }
 }
 
 async function getImdbPoster(title) {
+    if (globalCache.posters[title]) return globalCache.posters[title];
     try {
-        const { data } = await axios.get(`https://m.imdb.com/find/?q=${encodeURIComponent(title)}&s=tt`, { timeout: 3000 });
+        const { data } = await axios.get(`https://m.imdb.com/find/?q=${encodeURIComponent(title)}&s=tt`, { timeout: 2000 });
         const $ = cheerio.load(data);
         const img = $('.ipc-image').first().attr('src');
-        return img ? img.replace(/_V1_.*\.jpg$/, '_V1_.jpg') : null;
+        const url = img ? img.replace(/_V1_.*\.jpg$/, '_V1_.jpg') : null;
+        if (url) globalCache.posters[title] = url;
+        return url;
     } catch (e) { return null; }
 }
 
 async function getYoutubeTrailer(title) {
-    const queries = [`${title} official trailer`, `${title} trailer`];
+    if (globalCache.trailers[title]) return globalCache.trailers[title];
+    const queries = [`${title} official trailer`, `${title} movie trailer`];
     for (const query of queries) {
         try {
             const res = await ytSearch.GetListByKeyword(query, false, 1, [{type: 'video'}]);
             const videoId = res.items?.[0]?.id || res.items?.[0]?.videoId;
-            if (videoId) return videoId;
-        } catch (e) { 
-            console.error(`Youtube Search Error for "${query}":`, e.message);
-        }
+            if (videoId) {
+                globalCache.trailers[title] = videoId;
+                return videoId;
+            }
+        } catch (e) { continue; }
     }
-    return 'dQw4w9WgXcQ'; // Ultimate fallback
+    return 'dQw4w9WgXcQ';
 }
 
 export async function GET(request, { params }) {
