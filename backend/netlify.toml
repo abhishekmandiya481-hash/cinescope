@@ -1,0 +1,9 @@
+[build]
+  command = "npm install"
+  functions = "api"
+  publish = "api"
+
+[[redirects]]
+  from = "/*"
+  to = "/.netlify/functions/index"
+  status = 200
