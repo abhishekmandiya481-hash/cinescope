@@ -84,7 +84,7 @@ export default function MovieDetails({ params }) {
           onError={handleImgError}
         />
         <div style={{ flex: 1 }}>
-          <h1 style={{ fontSize: '3.5rem', margin: '0 0 0.5rem 0' }}>{movie.title} <span style={{ color: 'var(--text-muted)', fontWeight: 'normal' }}>({movie.release_date?.substring(0,4)})</span></h1>
+          <h1 style={{ fontSize: '3.5rem', margin: '0 0 0.5rem 0' }}>{movie.title} <span style={{ color: 'var(--text-muted)', fontWeight: 'normal' }}>({movie.year || movie.release_date?.substring(0,4)})</span></h1>
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1.5rem', color: 'var(--text-muted)' }}>
             <span style={{ background: 'var(--primary)', color: 'white', padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: 'bold' }}>
               ★ {movie.vote_average?.toFixed(1)}

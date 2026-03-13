@@ -26,6 +26,7 @@ const mockMoviesDB = imdbData.movies.map((m, i) => {
         overview: m.plot || "No plot available.",
         custom_poster_url: poster,
         year: m.year,
+        release_date: m.year ? `${m.year}-01-01` : "2024-01-01",
         runtime: parseInt(m.runtime) || 120,
         genres: (m.genres || []).map(g => ({ name: g })),
         _originalCast: (m.actors || "").split(', ').map((name, idx) => ({ id: idx, name, character: "Lead" })),
@@ -53,7 +54,8 @@ const tollywoodMovies = [
     genres: m.genres.map(g => ({ name: g })),
     custom_poster_url: "https://placehold.co/300x450/1a1a2e/e2b616?text=CineScope", // Will be upgraded by scraper
     _originalCast: [], // Will be upgraded by scraper
-    _isTollywood: true
+    _isTollywood: true,
+    release_date: `${m.year}-01-01`
 }));
 
 mockMoviesDB.push(...tollywoodMovies);
@@ -74,7 +76,8 @@ const bollywoodModern = [
     genres: m.genres.map(g => ({ name: g })),
     custom_poster_url: "https://placehold.co/300x450/1a1a2e/e2b616?text=CineScope",
     _originalCast: [],
-    _isBollywood: true
+    _isBollywood: true,
+    release_date: `${m.year}-01-01`
 }));
 
 mockMoviesDB.push(...bollywoodModern);
@@ -93,7 +96,8 @@ const hollywoodModern = [
     genres: m.genres.map(g => ({ name: g })),
     custom_poster_url: "https://placehold.co/300x450/1a1a2e/e2b616?text=CineScope",
     _originalCast: [],
-    _isHollywood: true
+    _isHollywood: true,
+    release_date: `${m.year}-01-01`
 }));
 
 mockMoviesDB.push(...hollywoodModern);
@@ -116,7 +120,8 @@ const movies2025 = [
     genres: m.genres.map(g => ({ name: g })),
     custom_poster_url: "https://placehold.co/300x450/1a1a2e/e2b616?text=CineScope",
     _originalCast: [],
-    _is2025: true
+    _is2025: true,
+    release_date: `${m.year}-01-01`
 }));
 
 mockMoviesDB.push(...movies2025);
