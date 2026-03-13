@@ -17,6 +17,9 @@ const mockMoviesDB = imdbData.movies.map((m, i) => {
     if (isLegacy || !poster) poster = "https://placehold.co/300x450/1a1a2e/e2b616?text=CineScope";
     if (poster && poster.startsWith('http://')) poster = poster.replace('http://', 'https://');
 
+    // Detect Bollywood based on Hindi script or ID range (147-161 in current JSON)
+    const isHindi = m.title.match(/[\u0900-\u097F]/) || (m.id >= 147 && m.id <= 161);
+
     return {
         id: m.id || (1000 + i),
         title: m.title,
@@ -26,7 +29,8 @@ const mockMoviesDB = imdbData.movies.map((m, i) => {
         runtime: parseInt(m.runtime) || 120,
         genres: (m.genres || []).map(g => ({ name: g })),
         _originalCast: (m.actors || "").split(', ').map((name, idx) => ({ id: idx, name, character: "Lead" })),
-        _director: m.director
+        _director: m.director,
+        _isBollywood: !!isHindi
     };
 });
 
@@ -53,6 +57,27 @@ const tollywoodMovies = [
 }));
 
 mockMoviesDB.push(...tollywoodMovies);
+
+// Inject Modern Bollywood Hits
+const bollywoodModern = [
+    { title: "Pathaan", year: "2023", plot: "An Indian agent must take down a former agent who has turned rogue and is planning a biological attack on India.", genres: ["Action", "Adventure"] },
+    { title: "Jawan", year: "2023", plot: "A mysterious man sets out to punish those responsible for his past while working for a social cause.", genres: ["Action", "Thriller"] },
+    { title: "Brahmastra Part One: Shiva", year: "2022", plot: "A young man finds his world turned upside down as he discovers he has the power to control fire.", genres: ["Action", "Fantasy"] },
+    { title: "Animal", year: "2023", plot: "A son's obsessive love for his father leads him down a path of violence and destruction.", genres: ["Action", "Crime"] },
+    { title: "Dunki", year: "2023", plot: "Four friends from a village in Punjab share a common dream: to go to England.", genres: ["Comedy", "Drama"] }
+].map((m, i) => ({
+    id: 6000 + i,
+    title: m.title,
+    overview: m.plot,
+    year: m.year,
+    runtime: 160,
+    genres: m.genres.map(g => ({ name: g })),
+    custom_poster_url: "https://placehold.co/300x450/1a1a2e/e2b616?text=CineScope",
+    _originalCast: [],
+    _isBollywood: true
+}));
+
+mockMoviesDB.push(...bollywoodModern);
 
 // Helpers (Simplified for migration)
 async function getImdbCast(title, year) {
@@ -197,7 +222,7 @@ export async function GET(request, { params }) {
     if (category === 'trending' || category === 'popular') {
         results = mockMoviesDB.slice(0, 10);
     } else if (category === 'bollywood') {
-        results = mockMoviesDB.filter(m => m.title.match(/[\u0900-\u097F]/) || (m.id > 1000 && !m._isTollywood)).slice(0, 10);
+        results = mockMoviesDB.filter(m => m._isBollywood).slice(0, 10);
     } else if (category === 'tollywood') {
         results = mockMoviesDB.filter(m => m._isTollywood).slice(0, 10);
     } else {
