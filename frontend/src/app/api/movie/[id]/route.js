@@ -17,11 +17,20 @@ export async function GET(request, { params }) {
         
         if (found) {
             const videoId = await getYoutubeTrailer(found.title);
+            let poster = found.posterUrl;
+
+            if (poster && (poster.includes('images-na.ssl-images-amazon.com') || poster.includes('ia.media-imdb.com'))) {
+                const freshPoster = await getImdbPoster(found.title);
+                if (freshPoster) poster = freshPoster;
+            }
+
+            if (!poster) poster = "https://via.placeholder.com/300x450?text=No+Poster+Found";
+
             movie = {
                 id: movieId,
                 title: found.title,
                 overview: found.plot,
-                custom_poster_url: found.posterUrl,
+                custom_poster_url: poster,
                 year: found.year,
                 genres: (found.genres || []).map(g => ({ name: g })),
                 credits: { cast: (found.actors || "").split(', ').map((name, i) => ({ id: i, name, character: "Lead" })) },
@@ -34,6 +43,15 @@ export async function GET(request, { params }) {
 
     if (!movie) return NextResponse.json({ message: "Not found" }, { status: 404 });
     return NextResponse.json(movie);
+}
+
+async function getImdbPoster(title) {
+    try {
+        const { data } = await axios.get(`https://m.imdb.com/find/?q=${encodeURIComponent(title)}&s=tt`, { timeout: 3000 });
+        const $ = cheerio.load(data);
+        const img = $('.ipc-image').first().attr('src');
+        return img ? img.replace(/_V1_.*\.jpg$/, '_V1_.jpg') : null;
+    } catch (e) { return null; }
 }
 
 async function getYoutubeTrailer(title) {

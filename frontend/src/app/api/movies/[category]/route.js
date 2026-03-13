@@ -62,9 +62,21 @@ export async function GET(request, { params }) {
 
     const enhancedResults = await Promise.all(results.map(async (m) => {
         const videoId = await getYoutubeTrailer(m.title);
+        let poster = m.custom_poster_url;
+        
+        // If image is from amazon/imdb s3 (likely broken), try to scrape a fresh one
+        if (poster && (poster.includes('images-na.ssl-images-amazon.com') || poster.includes('ia.media-imdb.com'))) {
+            const freshPoster = await getImdbPoster(m.title);
+            if (freshPoster) poster = freshPoster;
+        }
+
+        // Final fallback if still empty or failed
+        if (!poster) poster = "https://via.placeholder.com/300x450?text=No+Poster+Found";
+
         return {
             ...m,
-            custom_backdrop_url: m.custom_poster_url,
+            custom_poster_url: poster,
+            custom_backdrop_url: poster,
             videos: { results: [{ type: 'Trailer', site: 'YouTube', key: videoId }] }
         };
     }));
