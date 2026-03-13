@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import axios from 'axios';
 import ytSearch from 'youtube-search-api';
 import * as cheerio from 'cheerio';
-import imdbData from '../../../../data/imdb_movies.json';
+import imdbData from '../../../../../data/imdb_movies.json';
 
 // Global In-Memory Cache (Across requests in same serverless instance)
 const globalCache = {
