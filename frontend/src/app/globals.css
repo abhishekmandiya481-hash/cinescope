@@ -126,4 +126,9 @@ a {
 }
 @media (min-width: 769px) {
   .mobile-only { display: none !important; }
+  .mobile-only-padding { padding-bottom: 0 !important; }
+}
+
+@media (max-width: 768px) {
+  .mobile-only-padding { padding-bottom: 80px !important; }
 }

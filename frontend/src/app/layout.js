@@ -27,18 +27,6 @@ export default function RootLayout({ children }) {
           <MobileBottomNav />
           <Footer />
         </Providers>
-        <style jsx global>{`
-          @media (max-width: 768px) {
-            .mobile-only-padding {
-              padding-bottom: 80px !important;
-            }
-          }
-          @media (min-width: 769px) {
-            .mobile-only-padding {
-              padding-bottom: 0 !important;
-            }
-          }
-        `}</style>
       </body>
     </html>
   )
