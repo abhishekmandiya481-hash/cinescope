@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import axios from 'axios';
 import ytSearch from 'youtube-search-api';
-import cheerio from 'cheerio';
+import * as cheerio from 'cheerio';
 
 export async function GET(request, { params }) {
     const movieId = parseInt(params.id);
