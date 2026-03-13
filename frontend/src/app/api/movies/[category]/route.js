@@ -55,8 +55,9 @@ async function getYoutubeTrailer(title) {
 
 export async function GET(request, { params }) {
     const category = params.category;
+    const placeholder = "https://placehold.co/300x450/1a1a2e/e2b616?text=No+Poster+Found";
     
-    // 1. Handle Individual Movie Lookup (if category is a numeric ID)
+    // 1. Handle Individual Movie Lookup
     const movieId = parseInt(category);
     if (!isNaN(movieId)) {
         const found = mockMoviesDB.find(m => m.id === movieId);
@@ -64,12 +65,18 @@ export async function GET(request, { params }) {
             const videoId = await getYoutubeTrailer(found.title);
             let poster = found.custom_poster_url;
             
-            if (poster && (poster.includes('images-na.ssl-images-amazon.com') || poster.includes('ia.media-imdb.com'))) {
+            // Broaden detection: catch amazon, media-imdb, and any insecure http links
+            const isLegacy = poster && (poster.includes('images-amazon.com') || poster.includes('imdb.com'));
+            const isInsecure = poster && poster.startsWith('http://');
+
+            if (!poster || isLegacy || isInsecure) {
                 const freshPoster = await getImdbPoster(found.title);
                 if (freshPoster) poster = freshPoster;
             }
 
-            if (!poster) poster = "https://via.placeholder.com/300x450?text=No+Poster+Found";
+            // Enforce HTTPS
+            if (poster && poster.startsWith('http://')) poster = poster.replace('http://', 'https://');
+            if (!poster) poster = placeholder;
 
             const movieDetail = {
                 ...found,
@@ -96,12 +103,16 @@ export async function GET(request, { params }) {
         const videoId = await getYoutubeTrailer(m.title);
         let poster = m.custom_poster_url;
         
-        if (poster && (poster.includes('images-na.ssl-images-amazon.com') || poster.includes('ia.media-imdb.com'))) {
+        const isLegacy = poster && (poster.includes('images-amazon.com') || poster.includes('imdb.com'));
+        const isInsecure = poster && poster.startsWith('http://');
+
+        if (!poster || isLegacy || isInsecure) {
             const freshPoster = await getImdbPoster(m.title);
             if (freshPoster) poster = freshPoster;
         }
 
-        if (!poster) poster = "https://via.placeholder.com/300x450?text=No+Poster+Found";
+        if (poster && poster.startsWith('http://')) poster = poster.replace('http://', 'https://');
+        if (!poster) poster = placeholder;
 
         return {
             ...m,
