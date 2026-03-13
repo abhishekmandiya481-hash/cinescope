@@ -30,6 +30,30 @@ const mockMoviesDB = imdbData.movies.map((m, i) => {
     };
 });
 
+// Inject Tollywood Blockbusters (South Indian Cinema)
+const tollywoodMovies = [
+    { title: "RRR", year: "2022", plot: "A fictitious story about two legendary revolutionaries and their journey away from home before they started fighting for their country in 1920s.", genres: ["Action", "Drama"] },
+    { title: "Baahubali: The Beginning", year: "2015", plot: "In ancient India, an adventurous and daring man becomes involved in a decades-old feud between two warring people.", genres: ["Action", "Adventure"] },
+    { title: "Baahubali 2: The Conclusion", year: "2017", plot: "When Shiva, the son of Bahubali, learns about his heritage, he begins to look for answers. His story is juxtaposed with past events that unfolded in the Mahishmati Kingdom.", genres: ["Action", "Drama"] },
+    { title: "Pushpa: The Rise", year: "2021", plot: "A laborer rises through the ranks of a red sandalwood smuggling syndicate, making some powerful enemies along the way.", genres: ["Action", "Crime"] },
+    { title: "K.G.F: Chapter 1", year: "2018", plot: "In the 1970s, a fierce rebel rises against brutal oppression and becomes the symbol of hope to legions of enslaved people.", genres: ["Action", "Drama"] },
+    { title: "K.G.F: Chapter 2", year: "2022", plot: "The blood-soaked land of Kolar Gold Fields has a new overlord now - Rocky, whose name strikes fear in the heart of his foes.", genres: ["Action", "Drama"] },
+    { title: "Magadheera", year: "2009", plot: "A bike stuntman recalls his previous life as a warrior, and sets out to find his reincarnated love.", genres: ["Action", "Fantasy"] },
+    { title: "Eega", year: "2012", plot: "A murdered man is reincarnated as a housefly and seeks to avenge his death and protect his girlfriend from his killer.", genres: ["Action", "Comedy"] }
+].map((m, i) => ({
+    id: 5000 + i,
+    title: m.title,
+    overview: m.plot,
+    year: m.year,
+    runtime: 160,
+    genres: m.genres.map(g => ({ name: g })),
+    custom_poster_url: "https://placehold.co/300x450/1a1a2e/e2b616?text=CineScope", // Will be upgraded by scraper
+    _originalCast: [], // Will be upgraded by scraper
+    _isTollywood: true
+}));
+
+mockMoviesDB.push(...tollywoodMovies);
+
 // Helpers (Simplified for migration)
 async function getImdbCast(title) {
     if (globalCache.casts[title]) return globalCache.casts[title];
@@ -156,7 +180,9 @@ export async function GET(request, { params }) {
     if (category === 'trending' || category === 'popular') {
         results = mockMoviesDB.slice(0, 10);
     } else if (category === 'bollywood') {
-        results = mockMoviesDB.filter(m => m.title.match(/[\u0900-\u097F]/) || m.id > 1000).slice(0, 10);
+        results = mockMoviesDB.filter(m => m.title.match(/[\u0900-\u097F]/) || (m.id > 1000 && !m._isTollywood)).slice(0, 10);
+    } else if (category === 'tollywood') {
+        results = mockMoviesDB.filter(m => m._isTollywood).slice(0, 10);
     } else {
         results = mockMoviesDB.slice(0, 12);
     }
