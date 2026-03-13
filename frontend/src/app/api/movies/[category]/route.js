@@ -98,6 +98,29 @@ const hollywoodModern = [
 
 mockMoviesDB.push(...hollywoodModern);
 
+// Inject 2025 New Releases
+const movies2025 = [
+    { title: "Superman", year: "2025", plot: "A young reporter and a powerful alien must reconcile his heritage with his human upbringing.", genres: ["Action", "Sci-Fi"] },
+    { title: "Mickey 17", year: "2025", plot: "Mickey 17 is an 'expendable', a disposable employee on a human expedition sent to colonize the ice world Niflheim.", genres: ["Sci-Fi", "Adventure"] },
+    { title: "The Fantastic Four: First Steps", year: "2025", plot: "One of Marvel's most iconic families makes their debut in a retro-futuristic world.", genres: ["Action", "Adventure"] },
+    { title: "War 2", year: "2025", plot: "A high-octane spy thriller following the next mission of India's top agents.", genres: ["Action", "Thriller"] },
+    { title: "The Raja Saab", year: "2025", plot: "A romantic horror comedy set in a sprawling estate with mysterious secrets.", genres: ["Comedy", "Horror", "Romance"] },
+    { title: "Vishwambhara", year: "2025", plot: "An epic socio-fantasy film exploring ancient myths and modern destinies.", genres: ["Fantasy", "Action"] },
+    { title: "Alpha", year: "2025", plot: "The first female-led spy thriller in India's biggest action franchise.", genres: ["Action", "Thriller"] }
+].map((m, i) => ({
+    id: 8000 + i,
+    title: m.title,
+    overview: m.plot,
+    year: m.year,
+    runtime: 150,
+    genres: m.genres.map(g => ({ name: g })),
+    custom_poster_url: "https://placehold.co/300x450/1a1a2e/e2b616?text=CineScope",
+    _originalCast: [],
+    _is2025: true
+}));
+
+mockMoviesDB.push(...movies2025);
+
 // Helpers (Simplified for migration)
 async function getImdbCast(title, year) {
     if (globalCache.casts[title]) return globalCache.casts[title];
@@ -245,6 +268,8 @@ export async function GET(request, { params }) {
         results = mockMoviesDB.filter(m => m._isBollywood).slice(0, 10);
     } else if (category === 'tollywood') {
         results = mockMoviesDB.filter(m => m._isTollywood).slice(0, 10);
+    } else if (category === 'new-released') {
+        results = mockMoviesDB.filter(m => m._is2025).slice(0, 10);
     } else {
         results = mockMoviesDB.slice(0, 12);
     }
