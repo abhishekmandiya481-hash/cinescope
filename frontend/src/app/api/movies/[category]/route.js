@@ -79,6 +79,25 @@ const bollywoodModern = [
 
 mockMoviesDB.push(...bollywoodModern);
 
+// Inject Modern Hollywood hits
+const hollywoodModern = [
+    { title: "Oppenheimer", year: "2023", plot: "The story of American scientist J. Robert Oppenheimer and his role in the development of the atomic bomb.", genres: ["Biography", "Drama", "History"] },
+    { title: "Avatar: The Way of Water", year: "2022", plot: "Jake Sully lives with his newfound family formed on the extrasolar moon Pandora. Once a familiar threat returns to finish what was previously started, Jake must work with Neytiri and the army of the Na'vi race to protect their home.", genres: ["Action", "Adventure", "Sci-Fi"] },
+    { title: "Dune: Part Two", year: "2024", plot: "Paul Atreides unites with Chani and the Fremen while on a warpath of revenge against the conspirators who destroyed his family.", genres: ["Action", "Adventure", "Sci-Fi"] },
+].map((m, i) => ({
+    id: 7000 + i,
+    title: m.title,
+    overview: m.plot,
+    year: m.year,
+    runtime: 180,
+    genres: m.genres.map(g => ({ name: g })),
+    custom_poster_url: "https://placehold.co/300x450/1a1a2e/e2b616?text=CineScope",
+    _originalCast: [],
+    _isHollywood: true
+}));
+
+mockMoviesDB.push(...hollywoodModern);
+
 // Helpers (Simplified for migration)
 async function getImdbCast(title, year) {
     if (globalCache.casts[title]) return globalCache.casts[title];
@@ -220,7 +239,8 @@ export async function GET(request, { params }) {
     // 2. Handle Category Lists
     let results = [];
     if (category === 'trending' || category === 'popular') {
-        results = mockMoviesDB.slice(0, 10);
+        const curatedIds = [5000, 6000, 7000, 6001, 5002, 7001, 6003, 5003, 7002, 3];
+        results = curatedIds.map(id => mockMoviesDB.find(m => m.id === id)).filter(Boolean);
     } else if (category === 'bollywood') {
         results = mockMoviesDB.filter(m => m._isBollywood).slice(0, 10);
     } else if (category === 'tollywood') {
