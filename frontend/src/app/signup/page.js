@@ -9,11 +9,16 @@ export default function Signup() {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (password !== confirmPassword) {
+      setError('Password and password confirmation do not match');
+      return;
+    }
     try {
       const data = await api.post('/auth/register', { username, email, password });
       if (data.token) {
@@ -23,7 +28,8 @@ export default function Signup() {
         setError(data.message || 'Signup failed');
       }
     } catch (err) {
-      setError('Registration failed. Username or email might be taken.');
+      const msg = err.response?.data?.message || 'Registration failed. Username or email might be taken.';
+      setError(msg);
     }
   };
 
@@ -69,12 +75,24 @@ export default function Signup() {
           />
         </div>
         
-        <div style={{ marginBottom: '2rem' }}>
+        <div style={{ marginBottom: '1.5rem' }}>
           <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Password</label>
           <input 
             type="password" 
             value={password}
             onChange={e => setPassword(e.target.value)}
+            style={{ width: '100%', padding: '0.8rem', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)', background: 'var(--background)', color: 'white' }}
+            required 
+            minLength={6}
+          />
+        </div>
+
+        <div style={{ marginBottom: '2rem' }}>
+          <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Confirm Password</label>
+          <input 
+            type="password" 
+            value={confirmPassword}
+            onChange={e => setConfirmPassword(e.target.value)}
             style={{ width: '100%', padding: '0.8rem', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)', background: 'var(--background)', color: 'white' }}
             required 
             minLength={6}
