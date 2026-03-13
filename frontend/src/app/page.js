@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '../services/api';
 import Carousel from '../components/Carousel';
+import Image from 'next/image';
 import TrendingRow from '../components/TrendingRow';
 import SearchBar from '../components/SearchBar';
 import TrailerModal from '../components/TrailerModal';
