@@ -14,17 +14,24 @@ try {
     const filePath = path.join(process.cwd(), 'data/imdb_movies.json');
     if (fs.existsSync(filePath)) {
         const rawData = fs.readFileSync(filePath, 'utf-8');
-        mockMoviesDB = JSON.parse(rawData).movies.map((m, i) => ({
-            id: m.id || (1000 + i),
-            title: m.title,
-            overview: m.plot || "No plot available.",
-            custom_poster_url: m.posterUrl,
-            year: m.year,
-            runtime: parseInt(m.runtime) || 120,
-            genres: (m.genres || []).map(g => ({ name: g })),
-            _originalCast: (m.actors || "").split(', ').map((name, idx) => ({ id: idx, name, character: "Lead" })),
-            _director: m.director
-        }));
+        mockMoviesDB = JSON.parse(rawData).movies.map((m, i) => {
+            let poster = m.posterUrl;
+            const isLegacy = poster && (poster.includes('images-amazon.com') || poster.includes('imdb.com'));
+            if (isLegacy || !poster) poster = "https://placehold.co/300x450/1a1a2e/e2b616?text=CineScope";
+            if (poster && poster.startsWith('http://')) poster = poster.replace('http://', 'https://');
+
+            return {
+                id: m.id || (1000 + i),
+                title: m.title,
+                overview: m.plot || "No plot available.",
+                custom_poster_url: poster,
+                year: m.year,
+                runtime: parseInt(m.runtime) || 120,
+                genres: (m.genres || []).map(g => ({ name: g })),
+                _originalCast: (m.actors || "").split(', ').map((name, idx) => ({ id: idx, name, character: "Lead" })),
+                _director: m.director
+            };
+        });
     }
 } catch (e) {
     console.error("Error loading mock data:", e.message);
@@ -91,7 +98,7 @@ async function getYoutubeTrailer(title) {
 
 export async function GET(request, { params }) {
     const category = params.category;
-    const placeholder = "https://placehold.co/300x450/1a1a2e/e2b616?text=No+Poster+Found";
+    const placeholder = "https://placehold.co/300x450/1a1a2e/e2b616?text=CineScope";
     
     // 1. Handle Individual Movie Lookup
     const movieId = parseInt(category);
@@ -101,13 +108,18 @@ export async function GET(request, { params }) {
             const videoId = await getYoutubeTrailer(found.title);
             let poster = found.custom_poster_url;
             
-            // Broaden detection: catch amazon, media-imdb, and any insecure http links
+            // Identity & Upgrade: Detect placeholders or broken legacy URLs
+            const isPlaceholder = !poster || poster.includes('placehold.co');
             const isLegacy = poster && (poster.includes('images-amazon.com') || poster.includes('imdb.com'));
             const isInsecure = poster && poster.startsWith('http://');
 
-            if (!poster || isLegacy || isInsecure) {
+            if (isPlaceholder || isLegacy || isInsecure) {
                 const freshPoster = await getImdbPoster(found.title);
-                if (freshPoster) poster = freshPoster;
+                if (freshPoster) {
+                    poster = freshPoster;
+                } else if (isLegacy || isInsecure) {
+                    poster = placeholder; // Definitive fallback
+                }
             }
 
             // Enforce HTTPS
@@ -152,12 +164,18 @@ export async function GET(request, { params }) {
         const videoId = await getYoutubeTrailer(m.title);
         let poster = m.custom_poster_url;
         
+        // Identity & Upgrade: Detect placeholders or broken legacy URLs
+        const isPlaceholder = !poster || poster.includes('placehold.co');
         const isLegacy = poster && (poster.includes('images-amazon.com') || poster.includes('imdb.com'));
         const isInsecure = poster && poster.startsWith('http://');
 
-        if (!poster || isLegacy || isInsecure) {
+        if (isPlaceholder || isLegacy || isInsecure) {
             const freshPoster = await getImdbPoster(m.title);
-            if (freshPoster) poster = freshPoster;
+            if (freshPoster) {
+                poster = freshPoster;
+            } else if (isLegacy || isInsecure) {
+                poster = placeholder; // Definitive fallback
+            }
         }
 
         if (poster && poster.startsWith('http://')) poster = poster.replace('http://', 'https://');
