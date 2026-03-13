@@ -20,7 +20,11 @@ app.get("/", (req, res) => {
 
 // No Database connection needed; auth runs in-memory
 
-app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log(`Local:   http://localhost:${PORT}`);
-});
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, "0.0.0.0", () => {
+        console.log(`Server running on port ${PORT}`);
+        console.log(`Local:   http://localhost:${PORT}`);
+    });
+}
+
+module.exports = app;
